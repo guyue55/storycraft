@@ -19,10 +19,10 @@ StoryCraft 是一个基于 Next.js 的 AI 故事创作应用，部署在 Google 
 - SSH 访问权限到部署服务器
 
 ### 2. 项目信息
-- **项目ID**: `john-poc-453315`
-- **项目编号**: `216643156132`
+- **项目ID**: `YOUR-PROJECT-ID`
+- **项目编号**: `YOUR-PROJECT-NUMBER`
 - **区域**: `us-central1`
-- **服务器**: `34.134.201.73`
+- **服务器**: `YOUR-SERVER-IP`
 
 ## 部署步骤
 
@@ -30,7 +30,7 @@ StoryCraft 是一个基于 Next.js 的 AI 故事创作应用，部署在 Google 
 
 1. **连接到部署服务器**
 ```bash
-ssh root@34.134.201.73 -o ProxyCommand=none
+ssh root@YOUR-SERVER-IP -o ProxyCommand=none
 ```
 
 2. **克隆代码仓库**
@@ -51,7 +51,7 @@ chmod +x gcloud-deploy.sh gcloud-run-build.sh
 
 4. **配置项目ID**
 ```bash
-sed -i 's/INPUT YOUR PROJECT_ID/john-poc-453315/g' gcloud-deploy.sh
+sed -i 's/INPUT YOUR PROJECT_ID/YOUR-PROJECT-ID/g' gcloud-deploy.sh
 ```
 
 5. **执行基础设施部署**
@@ -61,24 +61,24 @@ sed -i 's/INPUT YOUR PROJECT_ID/john-poc-453315/g' gcloud-deploy.sh
 
 **创建的资源**：
 - Google Cloud APIs (Cloud Run, Cloud Build, Firestore 等)
-- 服务账户：`storycraft-service-account@john-poc-453315.iam.gserviceaccount.com`
-- Cloud Storage 存储桶：`storycraft-service-assets-john-poc-453315`
+- 服务账户：`storycraft-service-account@YOUR-PROJECT-ID.iam.gserviceaccount.com`
+- Cloud Storage 存储桶：`storycraft-service-assets-YOUR-PROJECT-ID`
 - Firestore 数据库：`storycraft-firestore-db`
 - Artifact Registry 仓库：`storycraft-service`
 
 ### 第二步：OAuth 配置
 
 1. **创建 OAuth 2.0 凭据**
-   - 访问：https://console.cloud.google.com/apis/credentials?project=john-poc-453315
+   - 访问：https://console.cloud.google.com/apis/credentials?project=YOUR-PROJECT-ID
    - 点击 "创建凭据" → "OAuth 客户端 ID"
    - 应用类型：Web应用
    - 名称：StoryCraft OAuth Client
-   - 已获授权的JavaScript来源：`https://storycraft-service-test-iuogxusjha-uc.a.run.app`
-   - 已获授权的重定向URI：`https://storycraft-service-test-iuogxusjha-uc.a.run.app/api/auth/callback/google`
+   - 已获授权的JavaScript来源：`https://your-service-url.run.app`
+   - 已获授权的重定向URI：`https://your-service-url.run.app/api/auth/callback/google`
 
 2. **下载凭据文件**
    - 下载 JSON 格式的凭据文件
-   - 文件名格式：`client_secret_216643156132-xxxxx.apps.googleusercontent.com.json`
+   - 文件名格式：`client_secret_YOUR-PROJECT-NUMBER-xxxxx.apps.googleusercontent.com.json`
 
 ### 第三步：应用部署
 
@@ -112,7 +112,7 @@ sed -i "s/INPUT YOUR NEXTAUTH_SECRET/$NEXTAUTH_SECRET/g" gcloud-run-build.sh
 4. **修复 NEXTAUTH_URL 配置**
 ```bash
 # 获取实际服务URL并更新配置
-ACTUAL_URL=$(gcloud run services describe storycraft-service-test --region=us-central1 --format='value(status.url)' 2>/dev/null || echo 'https://storycraft-service-test-iuogxusjha-uc.a.run.app')
+ACTUAL_URL=$(gcloud run services describe storycraft-service-test --region=us-central1 --format='value(status.url)' 2>/dev/null || echo 'https://your-service-url.run.app')
 sed -i "s|NEXTAUTH_URL=https://\${SERVICE_NAME}-\${PROJECT_NUMBER}\.\${LOCATION}\.run\.app|NEXTAUTH_URL=$ACTUAL_URL|g" gcloud-run-build.sh
 ```
 
@@ -125,18 +125,18 @@ sed -i "s|NEXTAUTH_URL=https://\${SERVICE_NAME}-\${PROJECT_NUMBER}\.\${LOCATION}
 
 ### 服务信息
 - **服务名称**: `storycraft-service-test`
-- **服务URL**: https://storycraft-service-test-iuogxusjha-uc.a.run.app
+- **服务URL**: https://your-service-url.run.app
 - **区域**: us-central1
 - **运行时**: Node.js 23 (Alpine Linux)
 
 ### 环境变量
 ```
 NODE_ENV=production
-NEXTAUTH_URL=https://storycraft-service-test-iuogxusjha-uc.a.run.app
+NEXTAUTH_URL=https://your-service-url.run.app
 AUTH_GOOGLE_ID=你的客户端ID
 AUTH_GOOGLE_SECRET=你的客户端密钥
 NEXTAUTH_SECRET=生成的密钥
-GCS_BUCKET_NAME=storycraft-service-assets-john-poc-453315
+GCS_BUCKET_NAME=storycraft-service-assets-YOUR-PROJECT-ID
 LOCATION=us-central1
 ```
 
@@ -148,7 +148,7 @@ gcloud run services list --region=us-central1
 ```
 
 2. **访问应用**
-   - 打开：https://storycraft-service-test-iuogxusjha-uc.a.run.app
+   - 打开：https://your-service-url.run.app
    - 测试 Google 登录功能
 
 3. **查看日志**
@@ -188,7 +188,7 @@ gcloud run services delete storycraft-service-test --region=us-central1
 gcloud artifacts repositories delete storycraft-service --location=us-central1
 
 # 删除 Storage 存储桶
-gsutil rm -r gs://storycraft-service-assets-john-poc-453315
+gsutil rm -r gs://storycraft-service-assets-YOUR-PROJECT-ID
 ```
 
 ## 安全注意事项
@@ -206,5 +206,5 @@ gsutil rm -r gs://storycraft-service-assets-john-poc-453315
 4. **安全更新**: 定期更新依赖包和基础镜像
 
 ## 联系信息
-- **项目负责人**: admin@johnzzhang.altostrat.com
+- **项目负责人**: your-email@domain.com
 - **技术支持**: 通过 GitHub Issues 提交问题
