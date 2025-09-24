@@ -38,10 +38,10 @@ async function getAccessToken(): Promise<string> {
 
 async function checkOperation(operationName: string, model: string = "veo-3.0-generate-001"): Promise<GenerateVideoResponse> {
   const token = await getAccessToken();
-  const LOCATION = process.env.LOCATION
+  const VEO_LOCATION = "us-central1"; const LOCATION = process.env.LOCATION
   const PROJECT_ID = process.env.PROJECT_ID
   const response = await fetch(
-    `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${model}:fetchPredictOperation`,
+    `https://${VEO_LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${VEO_LOCATION}/publishers/google/models/${model}:fetchPredictOperation`,
     {
       method: 'POST',
       headers: {
@@ -95,7 +95,7 @@ export async function generateSceneVideo(prompt: string, imageGcsUri: string, as
 
   const modifiedPrompt = prompt + '\nSubtitles: off'
 
-  const LOCATION = process.env.LOCATION;
+  const VEO_LOCATION = "us-central1"; const LOCATION = process.env.LOCATION;
   const PROJECT_ID = process.env.PROJECT_ID;
   const GCS_VIDEOS_STORAGE_URI = process.env.GCS_VIDEOS_STORAGE_URI;
 
@@ -103,7 +103,7 @@ export async function generateSceneVideo(prompt: string, imageGcsUri: string, as
   const makeRequest = async (attempt: number) => {
     try {
       const response = await fetch(
-        `https://${LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/google/models/${model}:predictLongRunning`,
+        `https://${VEO_LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${VEO_LOCATION}/publishers/google/models/${model}:predictLongRunning`,
         {
           method: 'POST',
           headers: {

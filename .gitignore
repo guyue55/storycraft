@@ -40,3 +40,29 @@ next-env.d.ts
 .ipynb_checkpoints/
 gcloud-deploy.sh
 gcloud-run-build.sh
+
+# Sensitive files - credentials and keys
+*.json
+!package*.json
+!components.json
+!tsconfig.json
+!next.config.mjs
+!postcss.config.mjs
+!tailwind.config.ts
+!firestore-indexes.json
+!cors-config.json
+client_secret*.json
+volcano-force*.json
+service-account*.json
+
+# Environment files
+.env
+.env.*
+
+# Backup files
+*.backup
+*.backup2
+
+# Deployment scripts with sensitive info
+gcloud-deploy.sh
+gcloud-run-build.sh
