@@ -80,7 +80,7 @@ resource "google_storage_bucket" "storycraft_assets" {
 
   lifecycle_rule {
     condition {
-      age = 30
+      age = 360
     }
     action {
       type = "Delete"

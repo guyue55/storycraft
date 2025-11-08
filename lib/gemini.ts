@@ -66,7 +66,7 @@ export async function generateImage(
                 location: 'global'
             });
 
-            const model = 'gemini-2.5-flash-image-preview';
+            const model = 'gemini-2.5-flash-image';
             const response = await ai.models.generateContent({
                 model,
                 config,
