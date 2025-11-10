@@ -523,36 +523,17 @@ export function StoryboardTab({
             </Button>
           </div>
 
-          {/* === MODIFICATION START === */}
-          {/* Replaced the slider with two icon buttons */}
-          <div className="flex gap-2 ml-4">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setDisplayMode('image')}
-              className={cn(
-                "hover:bg-accent hover:text-accent-foreground",
-                displayMode === 'image' && "bg-accent text-accent-foreground"
-              )}
-            >
-              <Image className="h-4 w-4" />
-              <span className="sr-only">Image view</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setDisplayMode('video')}
-              className={cn(
-                "hover:bg-accent hover:text-accent-foreground",
-                displayMode === 'video' && "bg-accent text-accent-foreground"
-              )}
-            >
-              <Video className="h-4 w-4" />
-              <span className="sr-only">Video view</span>
-            </Button>
+          {/* Display Mode Slider */}
+          <div className="flex items-center gap-2 ml-4">
+            <Image className="h-4 w-4 text-muted-foreground" />
+            <div className="relative w-8 h-6 bg-muted rounded-full cursor-pointer" onClick={() => setDisplayMode(displayMode === 'image' ? 'video' : 'image')}>
+              <div className={cn(
+                "absolute top-1 w-4 h-4 bg-primary rounded-full transition-transform duration-200",
+                displayMode === 'video' ? "translate-x-3" : "translate-x-1"
+              )} />
+            </div>
+            <Video className="h-4 w-4 text-muted-foreground" />
           </div>
-          {/* === MODIFICATION END === */}
-          
         </div>
         <div className="flex">
           <Button
@@ -612,4 +593,4 @@ export function StoryboardTab({
       )}
     </div>
   )
-}
+} 
