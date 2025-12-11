@@ -15,13 +15,16 @@ export async function generateContent(
     model: string = 'gemini-2.5-flash'
 ): Promise<string | undefined> {
 
-    logger.debug(`generateContent log ${process.env.PROJECT_ID}`)
-    logger.debug(`generateContent log ${process.env.LOCATION}`)
+    logger.debug(`generateContent log ${process.env.PROJECT_ID}`);
+    logger.debug(`generateContent log ${process.env.LOCATION}`);
+
+    // Use global endpoint for Gemini 3 Pro models
+    const location = model.startsWith('gemini-3-') ? 'global' : process.env.LOCATION;
 
     const ai = new GoogleGenAI({
         vertexai: true,
         project: process.env.PROJECT_ID,
-        location: process.env.LOCATION,
+        location: location,
     });
 
     const useSearchAndBrowser = false;
@@ -55,8 +58,8 @@ export async function generateImage(
         candidateCount: 1
     }): Promise<GenerateNanoBananaImageResponse> {
 
-    const maxRetries = 5; // Maximum number of retries
-    const initialDelay = 1000; // Initial delay in milliseconds (1 second)
+    const maxRetries = 5;
+    const initialDelay = 1000;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
@@ -66,17 +69,15 @@ export async function generateImage(
                 location: 'global'
             });
 
-            const model = 'gemini-2.5-flash-image';
+            const model = 'gemini-3-pro-image-preview';
             const response = await ai.models.generateContent({
                 model,
                 config,
                 contents: prompt,
             });
 
-            // Process the response to find and save the generated image
             if (!response.candidates || response.candidates.length === 0) {
                 logger.warn("No candidates found in the response.");
-                // If no candidates, but no error, it might be a valid (empty) response, so break retry loop.
                 return { success: false, errorMessage: "No candidates found in the response." };
             }
 
@@ -92,19 +93,18 @@ export async function generateImage(
                     return { success: true, imageGcsUri: imageGcsUri! };
                 }
             };
-            // If we reach here, no inlineData was found but no error occurred, so break retry loop.
             return { success: false, errorMessage: response.text };
         } catch (error) {
             logger.error(error)
             if (attempt < maxRetries) {
-                const baseDelay = initialDelay * Math.pow(2, attempt); // Exponential backoff
-                const jitter = Math.random() * 2000; // Random value between 0 and baseDelay
+                const baseDelay = initialDelay * Math.pow(2, attempt);
+                const jitter = Math.random() * 2000;
                 const delay = baseDelay + jitter;
                 logger.warn(`Attempt ${attempt + 1} failed for generateImage. Retrying in ${delay}ms...`, error);
                 await new Promise(resolve => setTimeout(resolve, delay));
             } else {
                 logger.error(`Failed generateImage after ${maxRetries} attempts.`, error);
-                throw error; // Re-throw the error after maximum retries
+                throw error;
             }
         }
     }

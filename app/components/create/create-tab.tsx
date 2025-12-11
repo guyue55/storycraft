@@ -91,6 +91,17 @@ const MODEL_OPTIONS = [
     modelName: "gemini-2.5-pro", 
     thinkingBudget: -1 
   }
+  ,
+  { 
+    label: "Scenario with Gemini 3 Pro (Global)", 
+    modelName: "gemini-3-pro-preview", 
+    thinkingBudget: 0 
+  },
+  { 
+    label: "Scenario with Gemini 3 Pro 💡 (Global)", 
+    modelName: "gemini-3-pro-preview", 
+    thinkingBudget: -1 
+  }
 ];
 
 interface CreateTabProps {
