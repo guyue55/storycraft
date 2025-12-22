@@ -87,6 +87,19 @@ export function SceneData({
           )}
           {displayMode === 'video' && scene.videoUri ? (
             <div className="absolute inset-0">
+            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                variant="secondary"
+                size="icon"
+                className="bg-black/50 hover:bg-blue-500 hover:text-white"
+                onClick={onGenerateVideo}
+                disabled={isGenerating}
+                title="Regenerate video"
+              >
+                {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                <span className="sr-only">Regenerate video</span>
+              </Button>
+            </div>
               <VideoPlayer videoGcsUri={scene.videoUri} aspectRatio={scenario.aspectRatio} />
             </div>
           ) : (
@@ -97,20 +110,23 @@ export function SceneData({
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             />
           )}
+          {!hideControls && scene.imageGcsUri && (
+            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                variant="secondary"
+                size="icon"
+                className="bg-black/50 hover:bg-blue-500 hover:text-white"
+                onClick={onGenerateVideo}
+                disabled={isGenerating}
+                title={scene.videoUri ? "Regenerate video" : "Generate video"}
+              >
+                {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Video className="h-4 w-4" />}
+                <span className="sr-only">{scene.videoUri ? "Regenerate" : "Generate"} video</span>
+              </Button>
+            </div>
+          )}
           {!hideControls && (
             <>
-              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button
-                  variant="secondary"
-                  size="icon"
-                  className="bg-black/50 hover:bg-blue-500 hover:text-white"
-                  onClick={onGenerateVideo}
-                  disabled={isGenerating}
-                >
-                  <Video className="h-4 w-4" />
-                  <span className="sr-only">Generate video for scene</span>
-                </Button>
-              </div>
               <div className="absolute top-2 left-2 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button
                   variant="secondary"

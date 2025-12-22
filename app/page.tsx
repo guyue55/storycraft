@@ -338,7 +338,6 @@ export default function Home() {
       scenes: regeneratedScenes
     });
     setGeneratingScenes(new Set());
-    setActiveTab("editor")
   };
 
   const handleGenerateVoiceover = async (voice?: Voice) => {
@@ -420,7 +419,7 @@ export default function Home() {
     }
   }
 
-  const handleGenerateVideo = async (index: number) => {
+  const handleGenerateVideo = async (index: number, model: string, generateAudio: boolean) => {
     if (!scenario) return;
     setErrorMessage(null);
     try {
@@ -432,7 +431,7 @@ export default function Home() {
       const response = await fetch('/api/videos', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scenes: [scene], scenario: scenario, language: scenario?.language, aspectRatio: scenario?.aspectRatio, durationSeconds: scenario?.durationSeconds }),
+        body: JSON.stringify({ scenes: [scene], scenario: scenario, language: scenario?.language, aspectRatio: scenario?.aspectRatio, model: model, generateAudio: generateAudio, durationSeconds: scenario?.durationSeconds }),
       });
 
       const { success, videoUrls, error } = await response.json();
@@ -1121,6 +1120,7 @@ export default function Home() {
             onAddScene={handleAddScene}
             onRemoveScene={handleRemoveScene}
             onReorderScenes={handleReorderScenes}
+            onAllVideosComplete={() => setActiveTab("editor")}
           />
         )}
 

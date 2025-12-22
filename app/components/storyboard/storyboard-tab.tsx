@@ -4,37 +4,32 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { Grid, List, Loader2, Presentation, Video, ChevronLeft, ChevronRight, Plus, Minus, Image, ChevronDown } from 'lucide-react'
+import { Grid, List, Loader2, Presentation, Video, ChevronLeft, ChevronRight, Plus, Minus, Image, ChevronDown, Check } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { Scene, Scenario, ImagePrompt, VideoPrompt } from "../../types"
 import { SceneData } from './scene-data'
 import { GcsImage } from '../ui/gcs-image'
 import { VideoPlayer } from '../video/video-player'
-
 const VEO_MODEL_OPTIONS = [
+
   { 
-    label: "Videos with Veo 3.1  🔈", 
-    modelName: "veo-3.1-generate-preview",
+    label: "Videos with Veo 3.1 🔈", 
+    modelName: "veo-3.1-generate-001",
     generateAudio: true
   },
   { 
-    label: "Videos with Veo 3.0 Fast 🔈", 
-    modelName: "veo-3.0-fast-generate-001",
-    generateAudio: true
-  },
-  { 
-    label: "Videos with Veo 3.0 Fast", 
-    modelName: "veo-3.0-fast-generate-001",
+    label: "Videos with Veo 3.1", 
+    modelName: "veo-3.1-generate-001",
     generateAudio: false
   },
   { 
-    label: "Videos with Veo 3.0 🔈", 
-    modelName: "veo-3.0-generate-001",
+    label: "Videos with Veo 3.1 Fast 🔈", 
+    modelName: "veo-3.1-fast-generate-001",
     generateAudio: true
   },
   { 
-    label: "Videos with Veo 3.0", 
-    modelName: "veo-3.0-generate-001",
+    label: "Videos with Veo 3.1 Fast", 
+    modelName: "veo-3.1-fast-generate-001",
     generateAudio: false
   }
 ];
@@ -124,11 +119,12 @@ interface StoryboardTabProps {
   onGenerateAllVideos: (model: string, generateAudio: boolean) => Promise<void>
   onUpdateScene: (index: number, updatedScene: Scene) => void
   onRegenerateImage: (index: number) => Promise<void>
-  onGenerateVideo: (index: number) => Promise<void>
+  onGenerateVideo: (index: number, model: string, generateAudio: boolean) => Promise<void>
   onUploadImage: (index: number, file: File) => Promise<void>
   onAddScene: () => void
   onRemoveScene: (index: number) => void
   onReorderScenes: (fromIndex: number, toIndex: number) => void
+  onAllVideosComplete?: () => void
 }
 
 export function StoryboardTab({
@@ -143,6 +139,7 @@ export function StoryboardTab({
   onUploadImage,
   onAddScene,
   onRemoveScene,
+  onAllVideosComplete,
   onReorderScenes,
 }: StoryboardTabProps) {
   const scenes = scenario.scenes
@@ -157,6 +154,14 @@ export function StoryboardTab({
 
   const handleGenerateAllVideosClick = () => {
     onGenerateAllVideos(selectedModel.modelName, selectedModel.generateAudio)
+  }
+
+
+  const handleGenerateNext = () => {
+    const nextIndex = scenes.findIndex((scene, i) => scene.imageGcsUri && !scene.videoUri && !generatingScenes.has(i))
+    if (nextIndex !== -1) {
+      onGenerateVideo(nextIndex, selectedModel.modelName, selectedModel.generateAudio)
+    }
   }
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
@@ -228,7 +233,7 @@ export function StoryboardTab({
                 scenario={scenario}
                 onUpdate={(updatedScene) => onUpdateScene(index, updatedScene)}
                 onRegenerateImage={() => onRegenerateImage(index)}
-                onGenerateVideo={() => onGenerateVideo(index)}
+                onGenerateVideo={() => onGenerateVideo(index, selectedModel.modelName, selectedModel.generateAudio)}
                 onUploadImage={(file) => onUploadImage(index, file)}
                 onRemoveScene={() => onRemoveScene(index)}
                 isGenerating={generatingScenes.has(index)}
@@ -269,7 +274,7 @@ export function StoryboardTab({
                     scenario={scenario}
                     onUpdate={(updatedScene) => onUpdateScene(index, updatedScene)}
                     onRegenerateImage={() => onRegenerateImage(index)}
-                    onGenerateVideo={() => onGenerateVideo(index)}
+                    onGenerateVideo={() => onGenerateVideo(index, selectedModel.modelName, selectedModel.generateAudio)}
                     onUploadImage={(file) => onUploadImage(index, file)}
                     onRemoveScene={() => onRemoveScene(index)}
                     isGenerating={generatingScenes.has(index)}
@@ -554,32 +559,16 @@ export function StoryboardTab({
           {/* === MODIFICATION END === */}
           
         </div>
-        <div className="flex">
-          <Button
-            onClick={handleGenerateAllVideosClick}
-            disabled={isVideoLoading || scenes.length === 0 || generatingScenes.size > 0}
-            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-r-none"
-          >
-            {isVideoLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating Videos...
-              </>
-            ) : (
-              <>
-                <Video className="mr-2 h-4 w-4" />
-                {selectedModel.label}
-              </>
-            )}
-          </Button>
+        <div className="flex gap-2">
           <Popover open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="px-2 border-l-0 rounded-l-none bg-primary text-primary-foreground hover:bg-primary/90"
                 disabled={isVideoLoading || scenes.length === 0 || generatingScenes.size > 0}
               >
-                <ChevronDown className="h-4 w-4" />
+                <Video className="mr-2 h-4 w-4" />
+                {selectedModel.label}
+                <ChevronDown className="ml-2 h-4 w-4" />
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-80 p-0" align="end">
@@ -600,6 +589,52 @@ export function StoryboardTab({
               </div>
             </PopoverContent>
           </Popover>
+          
+          <Button
+            onClick={handleGenerateAllVideosClick}
+            disabled={isVideoLoading || scenes.length === 0 || generatingScenes.size > 0}
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            {isVideoLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating All...
+              </>
+            ) : (
+              <>
+                <Video className="mr-2 h-4 w-4" />
+                Generate All Videos
+              </>
+            )}
+          </Button>
+          
+          <Button
+            onClick={handleGenerateNext}
+            disabled={isVideoLoading || scenes.length === 0 || generatingScenes.size > 0}
+            variant="secondary"
+          >
+            {generatingScenes.size > 0 ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Video className="mr-2 h-4 w-4" />
+                Generate Next
+              </>
+            )}
+          </Button>
+          
+          <Button
+            onClick={() => onAllVideosComplete && onAllVideosComplete()}
+            disabled={isVideoLoading || generatingScenes.size > 0 || !scenes.every(s => s.videoUri)}
+            variant="default"
+            className="bg-green-600 hover:bg-green-700 text-white"
+          >
+            <Check className="mr-2 h-4 w-4" />
+            Complete & Edit
+          </Button>
         </div>
       </div>
 
