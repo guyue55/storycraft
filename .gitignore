@@ -66,3 +66,8 @@ service-account*.json
 # Deployment scripts with sensitive info
 gcloud-deploy.sh
 gcloud-run-build.sh
+
+# Configuration files with secrets
+config.env
+*.env
+!.env.example
