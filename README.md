@@ -7,7 +7,7 @@ AI-powered video storyboard generation platform using Google's Imagen 4.0 and Ve
 ## Features
 
 - 🎬 Sequential video generation with Veo 3.1
-- 🎨 Image generation with Imagen 4.0
+- 🎨 Image generation with Imagen 4.0 (Nano Banana)
 - 🔐 Google OAuth with email whitelist
 - 📝 Cloud-based story management
 - ⚡ Real-time preview and regeneration
@@ -124,11 +124,29 @@ async signIn({ user }) {
 }
 ```
 
-## Documentation
 
-- [Deployment Guide](./DEPLOYMENT-CONFIG.md)
-- [Whitelist Configuration](./WHITELIST-CONFIG-GUIDE.md)
-- [Update Notes](./UPDATE-2025-12-22.md)
+**OAuth errors**: Check Client ID/Secret and redirect URIs
+
+**Firestore errors**: Verify composite index is created
+
+**Logs**:
+```bash
+gcloud logging read "resource.type=cloud_run_revision" --limit 50
+```
+
+## License
+
+Apache 2.0
+
+## Contributing
+
+Open a GitHub issue for questions or problems.
+
+## Troubleshooting
+
+**OAuth errors**: Check Client ID/Secret and redirect URIs
+
+**Firestore errors**: Verify composite index is created
 
 ## Troubleshooting
 
@@ -138,7 +156,7 @@ async signIn({ user }) {
 
 **Logs**:
 ```bash
-gcloud logging read "resource.type=cloud_run_revision" --limit 50
+gcloud logging read resource.type=cloud_run_revision --limit 50
 ```
 
 ## License
