@@ -71,3 +71,9 @@ gcloud-run-build.sh
 config.env
 *.env
 !.env.example
+
+# Deployment scripts with secrets
+deploy-john-poc.sh
+deploy-storycraft.sh
+update-storycraft-test.sh
+*.patch
