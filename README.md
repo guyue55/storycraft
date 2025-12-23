@@ -2,12 +2,12 @@
 
 # StoryCraft
 
-AI-powered video storyboard generation platform using Google's Imagen 4.0 and Veo 3.1 models.
+AI-powered video storyboard generation platform using Google.s Gemini 3 Pro and Veo 3.1 models.
 
 ## Features
 
 - 🎬 Sequential video generation with Veo 3.1
-- 🎨 Image generation with Imagen 4.0 (Nano Banana)
+- 🎨 Image generation with Gemini 3 Pro (Image Preview)
 - 🔐 Google OAuth with email whitelist
 - 📝 Cloud-based story management
 - ⚡ Real-time preview and regeneration
@@ -82,7 +82,7 @@ bash deploy.sh
 ## Tech Stack
 
 - **Framework**: Next.js 15, React 19, TypeScript
-- **AI Models**: Google Vertex AI (Imagen 4.0, Veo 3.1)
+- **AI Models**: Google Vertex AI (Gemini 3 Pro, Veo 3.1)
 - **Database**: Firestore
 - **Storage**: Google Cloud Storage
 - **Auth**: NextAuth.js with Google OAuth
