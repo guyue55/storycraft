@@ -416,15 +416,580 @@ bash deploy.sh
 
 ```
 storycraft/
-├── app/                    # Next.js app
-│   ├── api/               # API routes
-│   ├── components/        # React components
-│   └── page.tsx          # Main page
-├── auth.ts                # Authentication config
-├── config.env.example     # Config template
-├── deploy.sh              # Deployment script
-└── Dockerfile             # Docker config
+├── app/                           # Next.js 15 App Router
+│   ├── api/                       # API Routes (Server-side)
+│   │   ├── auth/[...nextauth]/   # NextAuth.js authentication endpoints
+│   │   ├── scenarios/            # Story CRUD operations
+│   │   ├── users/                # User management
+│   │   ├── generate-image/       # Image generation endpoint
+│   │   ├── generate-video/       # Video generation endpoint
+│   │   └── export-video/         # Video export and composition
+│   ├── components/               # React Components
+│   │   ├── storyboard/          # Storyboard UI components
+│   │   │   ├── storyboard-tab.tsx      # Main storyboard interface
+│   │   │   ├── scene-data.tsx          # Individual scene card
+│   │   │   └── scene-controls.tsx      # Scene action buttons
+│   │   ├── ui/                  # Reusable UI components (Radix UI)
+│   │   │   ├── button.tsx
+│   │   │   ├── dialog.tsx
+│   │   │   ├── popover.tsx
+│   │   │   └── gcs-image.tsx           # GCS image loader
+│   │   └── video/               # Video player components
+│   │       └── video-player.tsx        # Custom video player
+│   ├── sign-in/                 # Authentication pages
+│   │   └── page.tsx             # Sign-in page
+│   ├── layout.tsx               # Root layout with providers
+│   ├── page.tsx                 # Main application page
+│   └── logger.ts                # Logging utility
+├── lib/                          # Core Libraries
+│   ├── gemini.ts                # Gemini 3 Pro image generation
+│   ├── imagen.ts                # Imagen 4.0 API client
+│   ├── veo.ts                   # Veo 3.1 video generation
+│   ├── firestore.ts             # Firestore database operations
+│   └── gcs.ts                   # Google Cloud Storage operations
+├── hooks/                        # React Hooks
+│   └── use-auth.ts              # Authentication hook
+├── types/                        # TypeScript type definitions
+│   └── index.ts                 # Shared types (Scene, Scenario, etc.)
+├── auth.ts                       # NextAuth.js configuration
+├── middleware.ts                 # Next.js middleware (auth protection)
+├── config.env.example            # Configuration template
+├── deploy.sh                     # Deployment script
+├── Dockerfile                    # Docker container configuration
+├── next.config.js                # Next.js configuration
+├── tailwind.config.ts            # Tailwind CSS configuration
+└── package.json                  # Dependencies and scripts
 ```
+
+## Application Architecture
+
+### High-Level Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         Client (Browser)                     │
+│  ┌─────────────┐  ┌──────────────┐  ┌──────────────────┐  │
+│  │   React UI  │  │  TanStack    │  │  NextAuth.js     │  │
+│  │  Components │  │   Query      │  │   Client         │  │
+│  └─────────────┘  └──────────────┘  └──────────────────┘  │
+└────────────────────────────┬────────────────────────────────┘
+                             │ HTTPS
+                             ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Next.js Server (Cloud Run)                │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │              App Router (app/)                        │  │
+│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐    │  │
+│  │  │   Pages    │  │  API Routes│  │ Middleware │    │  │
+│  │  │  (SSR/RSC) │  │  (Server)  │  │   (Auth)   │    │  │
+│  │  └────────────┘  └────────────┘  └────────────┘    │  │
+│  └──────────────────────────────────────────────────────┘  │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │              Core Libraries (lib/)                    │  │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐          │  │
+│  │  │  Gemini  │  │   Veo    │  │Firestore │          │  │
+│  │  │  Client  │  │  Client  │  │  Client  │          │  │
+│  │  └──────────┘  └──────────┘  └──────────┘          │  │
+│  └──────────────────────────────────────────────────────┘  │
+└────────────────────────────┬────────────────────────────────┘
+                             │
+        ┌────────────────────┼────────────────────┐
+        ▼                    ▼                    ▼
+┌───────────────┐  ┌──────────────────┐  ┌──────────────┐
+│  Vertex AI    │  │    Firestore     │  │     GCS      │
+│ (Gemini, Veo) │  │   (Database)     │  │  (Storage)   │
+└───────────────┘  └──────────────────┘  └──────────────┘
+```
+
+### Request Flow
+
+#### 1. User Authentication Flow
+
+```
+User clicks "Sign in with Google"
+    ↓
+NextAuth.js redirects to Google OAuth
+    ↓
+User authorizes application
+    ↓
+Google redirects back with auth code
+    ↓
+NextAuth.js exchanges code for tokens
+    ↓
+auth.ts: signIn callback validates email
+    ↓
+Check ALLOWED_EMAIL_DOMAINS / ALLOWED_EMAILS
+    ↓
+If authorized: Create session with JWT
+    ↓
+Store session in encrypted cookie
+    ↓
+Redirect to main application
+```
+
+#### 2. Image Generation Flow
+
+```
+User enters prompt and clicks "Generate Images"
+    ↓
+Frontend: POST /api/generate-image
+    ↓
+Middleware: Verify authentication
+    ↓
+API Route: Extract prompt and parameters
+    ↓
+lib/gemini.ts: Call Vertex AI
+    ↓
+Model: gemini-3-pro-image-preview
+    ↓
+Generate image (base64)
+    ↓
+lib/gcs.ts: Upload to Cloud Storage
+    ↓
+Return GCS URI to client
+    ↓
+Frontend: Display image in scene card
+    ↓
+lib/firestore.ts: Save scenario to database
+```
+
+#### 3. Video Generation Flow
+
+```
+User clicks "Generate Next" or scene video button
+    ↓
+Frontend: POST /api/generate-video
+    ↓
+Middleware: Verify authentication
+    ↓
+API Route: Extract scene index and model
+    ↓
+lib/veo.ts: Call Vertex AI
+    ↓
+Model: veo-3.1-generate-001 or veo-3.1-fast-generate-001
+    ↓
+Parameters:
+  - prompt: scene.videoPrompt
+  - referenceImage: scene.imageGcsUri
+  - generateAudio: true/false
+    ↓
+Submit video generation job
+    ↓
+Poll job status (exponential backoff)
+    ↓
+Job complete: Get video GCS URI
+    ↓
+Return video URI to client
+    ↓
+Frontend: Update scene with video
+    ↓
+lib/firestore.ts: Update scenario in database
+```
+
+#### 4. Story Management Flow
+
+```
+Load Stories:
+  GET /api/scenarios
+    ↓
+  lib/firestore.ts: Query scenarios collection
+    ↓
+  Filter: userId == session.user.id
+    ↓
+  Order by: updatedAt DESC
+    ↓
+  Return: List of scenarios
+
+Create Story:
+  POST /api/scenarios
+    ↓
+  Validate: User authenticated
+    ↓
+  lib/firestore.ts: Create document
+    ↓
+  Set: userId, createdAt, updatedAt
+    ↓
+  Return: New scenario ID
+
+Update Story:
+  PUT /api/scenarios/[id]
+    ↓
+  Validate: User owns scenario
+    ↓
+  lib/firestore.ts: Update document
+    ↓
+  Set: updatedAt = now()
+    ↓
+  Return: Success
+
+Delete Story:
+  DELETE /api/scenarios/[id]
+    ↓
+  Validate: User owns scenario
+    ↓
+  lib/firestore.ts: Delete document
+    ↓
+  lib/gcs.ts: Delete associated media files
+    ↓
+  Return: Success
+```
+
+## Component Architecture
+
+### Main Application (app/page.tsx)
+
+```typescript
+MainPage
+├── State Management
+│   ├── scenarios (list of stories)
+│   ├── currentScenario (active story)
+│   ├── activeTab (storyboard/editor)
+│   └── generatingScenes (Set of scene indices)
+├── Handlers
+│   ├── handleGenerateImage(index)
+│   ├── handleGenerateVideo(index, model, audio)
+│   ├── handleGenerateAllVideos(model, audio)
+│   ├── handleSaveScenario()
+│   └── handleDeleteScenario(id)
+└── UI Components
+    ├── Header (title, user menu)
+    ├── StoryList (sidebar)
+    ├── TabNavigation (storyboard/editor)
+    └── StoryboardTab / EditorTab
+```
+
+### Storyboard Tab (app/components/storyboard/storyboard-tab.tsx)
+
+```typescript
+StoryboardTab
+├── Props
+│   ├── scenario: Scenario
+│   ├── onGenerateVideo(index, model, audio)
+│   ├── onUpdateScene(index, scene)
+│   └── onAllVideosComplete()
+├── State
+│   ├── selectedModel (Veo model)
+│   ├── viewMode (grid/list)
+│   └── generatingScenes (Set)
+├── Features
+│   ├── Model Selection Dropdown
+│   │   └── VEO_MODEL_OPTIONS array
+│   ├── Generate Next Button
+│   │   └── handleGenerateNext()
+│   ├── Complete & Edit Button
+│   │   └── Enabled when all videos ready
+│   └── Scene Grid/List
+│       └── SceneData components
+└── Logic
+    └── handleGenerateNext()
+        ├── Find first scene with image but no video
+        ├── Call onGenerateVideo(index, model, audio)
+        └── Update generatingScenes state
+```
+
+### Scene Card (app/components/storyboard/scene-data.tsx)
+
+```typescript
+SceneData
+├── Props
+│   ├── scene: Scene
+│   ├── index: number
+│   ├── onGenerateVideo()
+│   ├── onRegenerateImage()
+│   └── onUploadImage(file)
+├── Display Modes
+│   ├── Image Mode
+│   │   ├── Show GcsImage component
+│   │   └── Hover: Generate Video button
+│   └── Video Mode
+│       ├── Show VideoPlayer component
+│       └── Hover: Regenerate Video button
+├── Controls (hover overlay)
+│   ├── Regenerate Image button
+│   ├── Upload Image button
+│   ├── Edit Prompt button
+│   └── Delete Scene button
+└── Status Indicators
+    ├── Loading spinner (isGenerating)
+    └── Error message (if failed)
+```
+
+## Data Models
+
+### Scenario (Story)
+
+```typescript
+interface Scenario {
+  id: string;                    // Firestore document ID
+  userId: string;                // Owner's Google user ID
+  title: string;                 // Story title
+  aspectRatio: '16:9' | '9:16';  // Video aspect ratio
+  scenes: Scene[];               // Array of scenes
+  createdAt: Timestamp;          // Creation time
+  updatedAt: Timestamp;          // Last update time
+}
+```
+
+### Scene
+
+```typescript
+interface Scene {
+  imagePrompt: ImagePrompt;      // Image generation prompt
+  videoPrompt: VideoPrompt;      // Video generation prompt
+  imageGcsUri?: string;          // Generated image URL
+  videoUri?: string;             // Generated video URL
+  duration?: number;             // Video duration (seconds)
+}
+```
+
+### Image Prompt
+
+```typescript
+interface ImagePrompt {
+  prompt: string;                // Text description
+  negativePrompt?: string;       // What to avoid
+  aspectRatio: string;           // Image dimensions
+  numberOfImages: number;        // How many to generate
+  seed?: number;                 // Random seed
+}
+```
+
+### Video Prompt
+
+```typescript
+interface VideoPrompt {
+  prompt: string;                // Video description
+  negativePrompt?: string;       // What to avoid
+  duration: number;              // Video length (seconds)
+}
+```
+
+## API Endpoints
+
+### Authentication
+
+- `GET /api/auth/signin` - Sign-in page
+- `GET /api/auth/callback/google` - OAuth callback
+- `GET /api/auth/signout` - Sign out
+- `GET /api/auth/session` - Get current session
+
+### Scenarios (Stories)
+
+- `GET /api/scenarios` - List user's scenarios
+- `POST /api/scenarios` - Create new scenario
+- `GET /api/scenarios/[id]` - Get scenario by ID
+- `PUT /api/scenarios/[id]` - Update scenario
+- `DELETE /api/scenarios/[id]` - Delete scenario
+
+### Generation
+
+- `POST /api/generate-image` - Generate image with Gemini 3 Pro
+- `POST /api/generate-video` - Generate video with Veo 3.1
+- `POST /api/export-video` - Export final video composition
+
+### Users
+
+- `GET /api/users/me` - Get current user info
+- `PUT /api/users/me` - Update user preferences
+
+## State Management
+
+### Client-Side State (React)
+
+```typescript
+// Local component state
+const [scenarios, setScenarios] = useState<Scenario[]>([]);
+const [currentScenario, setCurrentScenario] = useState<Scenario | null>(null);
+const [activeTab, setActiveTab] = useState<'storyboard' | 'editor'>('storyboard');
+const [generatingScenes, setGeneratingScenes] = useState<Set<number>>(new Set());
+
+// TanStack Query for server state
+const { data: scenarios } = useQuery({
+  queryKey: ['scenarios'],
+  queryFn: fetchScenarios
+});
+```
+
+### Server-Side State (Firestore)
+
+```
+Collection: scenarios
+├── Document: {scenarioId}
+│   ├── userId: string
+│   ├── title: string
+│   ├── scenes: Scene[]
+│   ├── createdAt: Timestamp
+│   └── updatedAt: Timestamp
+└── Index: (userId ASC, updatedAt DESC)
+```
+
+### Session State (NextAuth)
+
+```typescript
+// Stored in encrypted JWT cookie
+interface Session {
+  user: {
+    id: string;        // Google user ID
+    email: string;     // User email
+    name: string;      // Display name
+    image: string;     // Profile picture
+  };
+  expires: string;     // Session expiration
+}
+```
+
+## Security Architecture
+
+### Authentication Layer
+
+```
+Request → Middleware (middleware.ts)
+    ↓
+Check session cookie
+    ↓
+If no session: Redirect to /sign-in
+    ↓
+If session exists: Verify JWT signature
+    ↓
+Decode user info from token
+    ↓
+Attach to request context
+    ↓
+Continue to API route
+```
+
+### Authorization Layer
+
+```
+API Route Handler
+    ↓
+Get session: await auth()
+    ↓
+Extract userId from session
+    ↓
+Query Firestore with userId filter
+    ↓
+Verify user owns resource
+    ↓
+If authorized: Process request
+    ↓
+If not: Return 403 Forbidden
+```
+
+### Email Whitelist
+
+```
+Google OAuth Callback
+    ↓
+auth.ts: signIn callback
+    ↓
+Extract email from profile
+    ↓
+Check ALLOWED_EMAIL_DOMAINS
+    ↓
+Check ALLOWED_EMAILS
+    ↓
+If match: return true (allow)
+    ↓
+If no match: return false (deny)
+    ↓
+User sees "Access Denied" page
+```
+
+## Performance Optimizations
+
+1. **Image Optimization**
+   - Next.js Image component with automatic optimization
+   - Lazy loading with `loading="lazy"`
+   - Responsive images with `srcset`
+
+2. **Code Splitting**
+   - Automatic route-based code splitting
+   - Dynamic imports for heavy components
+   - Separate chunks for vendor libraries
+
+3. **Caching Strategy**
+   - TanStack Query for server state caching
+   - Stale-while-revalidate for scenarios
+   - GCS signed URLs with 1-hour expiration
+
+4. **API Optimization**
+   - Exponential backoff for AI API calls
+   - Parallel video generation support
+   - Batch Firestore operations
+
+5. **Cloud Run Scaling**
+   - Min instances: 0 (cost optimization)
+   - Max instances: 100 (handle traffic spikes)
+   - Concurrency: 80 requests per instance
+   - CPU allocation: 2 vCPU
+   - Memory: 4 GiB
+
+## Error Handling
+
+### Client-Side
+
+```typescript
+try {
+  const response = await fetch('/api/generate-video', {
+    method: 'POST',
+    body: JSON.stringify({ sceneIndex, model })
+  });
+  
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+  
+  const data = await response.json();
+  updateScene(sceneIndex, { videoUri: data.videoUri });
+  
+} catch (error) {
+  console.error('Video generation failed:', error);
+  showErrorToast('Failed to generate video');
+  setGeneratingScenes(prev => {
+    const next = new Set(prev);
+    next.delete(sceneIndex);
+    return next;
+  });
+}
+```
+
+### Server-Side
+
+```typescript
+export async function POST(request: Request) {
+  try {
+    const session = await auth();
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+    
+    const { sceneIndex, model } = await request.json();
+    
+    // Generate video
+    const videoUri = await generateVideo(prompt, model);
+    
+    return NextResponse.json({ videoUri });
+    
+  } catch (error) {
+    logger.error('Video generation error:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+## Logging and Monitoring
+
+- **Application Logs**: Cloud Logging (stdout/stderr)
+- **Error Tracking**: Console errors logged to Cloud Logging
+- **Performance Metrics**: Cloud Run metrics (latency, requests, errors)
+- **Custom Logging**: `app/logger.ts` with log levels (debug, info, warn, error)
 
 ## Key Features
 
