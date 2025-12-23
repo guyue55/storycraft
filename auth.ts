@@ -7,6 +7,37 @@ export const authConfig = {
         signIn: "/sign-in",
     },
     callbacks: {
+        async signIn({ user }) {
+            const email = user.email?.toLowerCase();
+            
+            if (!email) {
+                console.log('[Auth] Sign-in denied: No email provided');
+                return false;
+            }
+
+            // 检查白名单域名
+            const allowedDomains = process.env.ALLOWED_EMAIL_DOMAINS?.split(',')
+                .map(d => d.trim().toLowerCase()) || [];
+            
+            for (const domain of allowedDomains) {
+                if (email.endsWith(domain)) {
+                    console.log(`[Auth] Sign-in allowed: ${email} matches domain ${domain}`);
+                    return true;
+                }
+            }
+
+            // 检查白名单邮箱
+            const allowedEmails = process.env.ALLOWED_EMAILS?.split(',')
+                .map(e => e.trim().toLowerCase()) || [];
+            
+            if (allowedEmails.includes(email)) {
+                console.log(`[Auth] Sign-in allowed: ${email} in whitelist`);
+                return true;
+            }
+
+            console.log(`[Auth] Sign-in denied: ${email} not in whitelist`);
+            return false;
+        },
         authorized({ auth, request: { nextUrl } }) {
             const isLoggedIn = !!auth?.user
             const isOnSignIn = nextUrl.pathname.startsWith("/sign-in")
@@ -24,34 +55,27 @@ export const authConfig = {
 
             return false
         },
-        // Add user info to the session token
         async jwt({ token, profile, account }) {
             if (profile) {
-                // Ensure profile object exists and has picture property
-                // The exact structure might depend on the provider (Google usually has picture)
                 const googleProfile = profile as { picture?: string };
                 if (googleProfile.picture) {
                     token.picture = googleProfile.picture
                 }
             }
             
-            // Store Google's stable user ID in the token
             if (account?.provider === 'google' && account.providerAccountId) {
                 token.googleUserId = account.providerAccountId
             }
             
             return token
         },
-        // Add user info to the session object
         async session({ session, token }) {
             if (token?.picture && session.user) {
                 session.user.image = token.picture as string;
             }
-            // Use Google's stable user ID instead of NextAuth's internal ID
             if (token?.googleUserId && session.user) {
                 session.user.id = token.googleUserId as string;
             } else if (token?.sub && session.user) {
-                // Fallback to NextAuth's ID if Google ID is not available
                 session.user.id = token.sub;
             }
             return session
