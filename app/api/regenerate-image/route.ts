@@ -14,7 +14,7 @@ import { createCollage } from '@/app/actions/resize-image'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { prompt, scenario } = body as { prompt: ImagePrompt, scenario: Scenario }
+    const { prompt, scenario, imageType = 'start' } = body as { prompt: ImagePrompt, scenario: Scenario, imageType?: 'start' | 'end' }
 
     if (!prompt) {
       return NextResponse.json({ error: 'Prompt is required' }, { status: 400 })
@@ -70,6 +70,14 @@ export async function POST(request: NextRequest) {
           [createPartFromUri(collageUri, 'image/png')].concat(settingsParts).concat([createPartFromText(promptString)])
         )
       }
+      
+      // Return the result with the imageType so the client knows which image to update
+      if (result.success) {
+        return NextResponse.json({
+          ...result,
+          imageType
+        });
+      }
       return NextResponse.json(result);
     } else {
       // Convert structured prompt to string if needed
@@ -85,7 +93,8 @@ export async function POST(request: NextRequest) {
         logger.debug(`Generated image: ${resultJson.predictions[0].gcsUri}`)
         return NextResponse.json({
           success: true,
-          imageGcsUri: resultJson.predictions[0].gcsUri
+          imageGcsUri: resultJson.predictions[0].gcsUri,
+          imageType
         })
       }
     }

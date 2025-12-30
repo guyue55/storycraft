@@ -88,7 +88,7 @@ async function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export async function generateSceneVideo(prompt: string, imageGcsUri: string, aspectRatio: string = "16:9", model: string = "veo-3.0-generate-001", generateAudio: boolean = true, durationSeconds: number = 8): Promise<string> {
+export async function generateSceneVideo(prompt: string, imageGcsUri: string, endImageGcsUri: string | undefined, aspectRatio: string = "16:9", model: string = "veo-3.0-generate-001", generateAudio: boolean = true, durationSeconds: number = 8): Promise<string> {
   const token = await getAccessToken();
   const maxRetries = 5; // Maximum number of retries
   const initialDelay = 1000; // Initial delay in milliseconds (1 second)
@@ -99,11 +99,18 @@ export async function generateSceneVideo(prompt: string, imageGcsUri: string, as
   const PROJECT_ID = process.env.PROJECT_ID;
   const GCS_VIDEOS_STORAGE_URI = process.env.GCS_VIDEOS_STORAGE_URI;
 
+  // Auto-upgrade to Veo 3.1 if end frame is provided and model is 3.0
+  let actualModel = model;
+  if (endImageGcsUri && model.includes("veo-3.0")) {
+    actualModel = "veo-3.1-generate-001";
+    logger.info(`Upgrading model to ${actualModel} for end frame support`);
+  }
+
   logger.debug(model)
   const makeRequest = async (attempt: number) => {
     try {
       const response = await fetch(
-        `https://${VEO_LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${VEO_LOCATION}/publishers/google/models/${model}:predictLongRunning`,
+        `https://${VEO_LOCATION}-aiplatform.googleapis.com/v1/projects/${PROJECT_ID}/locations/${VEO_LOCATION}/publishers/google/models/${actualModel}:predictLongRunning`,
         {
           method: 'POST',
           headers: {
@@ -116,8 +123,9 @@ export async function generateSceneVideo(prompt: string, imageGcsUri: string, as
                 prompt: modifiedPrompt,
                 image: {
                   gcsUri: imageGcsUri,
-                  mimeType: "png",
+                  mimeType: "image/png",
                 },
+                ...(endImageGcsUri ? { lastFrame: { gcsUri: endImageGcsUri, mimeType: "image/png" } } : {}),
               },
             ],
             parameters: {

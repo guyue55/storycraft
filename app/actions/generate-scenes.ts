@@ -251,6 +251,82 @@ export async function generateStoryboard(scenario: Scenario, numScenes: number, 
                     },
                     required: ['Style', 'Composition', 'Subject', 'Prop', 'Context', 'Scene'],
                   },
+                  'endImagePrompt': {
+                    type: Type.OBJECT,
+                    nullable: true,
+                    properties: {
+                      'Style': {
+                        type: Type.STRING,
+                        nullable: false,
+                      },
+                      'Composition': {
+                        type: Type.OBJECT,
+                        nullable: false,
+                        properties: {
+                          'shot_type': {
+                            type: Type.STRING,
+                            nullable: false,
+                          },
+                          'lighting': {
+                            type: Type.STRING,
+                            nullable: false,
+                          },
+                          'overall_mood': {
+                            type: Type.STRING,
+                            nullable: false,
+                          }
+                        },
+                        required: ['shot_type', 'lighting', 'overall_mood'],
+                      },
+                      'Subject': {
+                        type: Type.ARRAY,
+                        nullable: false,
+                        items: {
+                          type: Type.OBJECT,
+                          properties: {
+                            'name': {
+                              type: Type.STRING,
+                              nullable: false,
+                            }
+                          },
+                          required: ['name'],
+                        }
+                      },
+                      'Prop': {
+                        type: Type.ARRAY,
+                        nullable: false,
+                        items: {
+                          type: Type.OBJECT,
+                          properties: {
+                            'name': {
+                              type: Type.STRING,
+                              nullable: false,
+                            }
+                          },
+                          required: ['name'],
+                        }
+                      },
+                      'Context': {
+                        type: Type.ARRAY,
+                        nullable: false,
+                        items: {
+                          type: Type.OBJECT,
+                          properties: {
+                            'name': {
+                              type: Type.STRING,
+                              nullable: false,
+                            }
+                          },
+                          required: ['name'],
+                        }
+                      },
+                      'Scene': {
+                        type: Type.STRING,
+                        nullable: false,
+                      }
+                    },
+                    required: ['Style', 'Composition', 'Subject', 'Prop', 'Context', 'Scene'],
+                  },
                   'videoPrompt': {
                     type: Type.OBJECT,
                     nullable: false,

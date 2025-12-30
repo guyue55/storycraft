@@ -29,6 +29,8 @@ export interface Scene {
   voiceover: string;
   charactersPresent: string[];
   imageGcsUri?: string;
+  endImageGcsUri?: string;
+  endImagePrompt?: ImagePrompt;
   videoUri?: string;
   voiceoverAudioUri?: string;
   errorMessage?: string;

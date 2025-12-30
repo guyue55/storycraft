@@ -33,6 +33,14 @@ export function EditSceneModal({ isOpen, onClose, scene, sceneNumber, scenario, 
       imagePrompt: {
         ...scene.imagePrompt,
         Subject: scene.imagePrompt.Subject || []
+      },
+      endImagePrompt: scene.endImagePrompt ? {
+        ...scene.endImagePrompt,
+        Subject: scene.endImagePrompt.Subject || []
+      } : {
+        ...scene.imagePrompt,
+        Subject: scene.imagePrompt.Subject || [],
+        Scene: "End of scene: " + scene.imagePrompt.Scene
       }
     }
     setEditedScene(normalizedScene)
@@ -44,30 +52,36 @@ export function EditSceneModal({ isOpen, onClose, scene, sceneNumber, scenario, 
     }
   }, [isOpen])
 
-  const updateImagePrompt = (field: keyof ImagePrompt, value: any) => {
+  const updateImagePrompt = (field: keyof ImagePrompt, value: any, isEnd: boolean = false) => {
+    const promptKey = isEnd ? 'endImagePrompt' : 'imagePrompt';
     setEditedScene(prev => ({
       ...prev,
-      imagePrompt: {
-        ...prev.imagePrompt,
+      [promptKey]: {
+        ...(prev[promptKey] as ImagePrompt),
         [field]: value
       }
     }))
   }
 
-  const updateImagePromptComposition = (field: keyof ImagePrompt['Composition'], value: string) => {
-    setEditedScene(prev => ({
-      ...prev,
-      imagePrompt: {
-        ...prev.imagePrompt,
-        Composition: {
-          ...prev.imagePrompt.Composition,
-          [field]: value
+  const updateImagePromptComposition = (field: keyof ImagePrompt['Composition'], value: string, isEnd: boolean = false) => {
+    const promptKey = isEnd ? 'endImagePrompt' : 'imagePrompt';
+    setEditedScene(prev => {
+      const currentPrompt = prev[promptKey] as ImagePrompt;
+      return {
+        ...prev,
+        [promptKey]: {
+          ...currentPrompt,
+          Composition: {
+            ...currentPrompt.Composition,
+            [field]: value
+          }
         }
       }
-    }))
+    })
   }
 
-  const updateImagePromptSubjects = (selectedCharacterNames: string[]) => {
+  const updateImagePromptSubjects = (selectedCharacterNames: string[], isEnd: boolean = false) => {
+    const promptKey = isEnd ? 'endImagePrompt' : 'imagePrompt';
     // Filter out empty or invalid character names and convert to Subject objects
     const validCharacterNames = selectedCharacterNames.filter(name => name && name.trim() !== '')
     const subjects = validCharacterNames.map(characterName => {
@@ -80,14 +94,15 @@ export function EditSceneModal({ isOpen, onClose, scene, sceneNumber, scenario, 
     
     setEditedScene(prev => ({
       ...prev,
-      imagePrompt: {
-        ...prev.imagePrompt,
+      [promptKey]: {
+        ...(prev[promptKey] as ImagePrompt),
         Subject: subjects
       }
     }))
   }
 
-  const updateImagePromptProps = (selectedPropNames: string[]) => {
+  const updateImagePromptProps = (selectedPropNames: string[], isEnd: boolean = false) => {
+    const promptKey = isEnd ? 'endImagePrompt' : 'imagePrompt';
     // Filter out empty or invalid prop names and convert to Subject objects
     const validPropNames = selectedPropNames.filter(name => name && name.trim() !== '')
     const props = validPropNames.map(propName => {
@@ -100,30 +115,33 @@ export function EditSceneModal({ isOpen, onClose, scene, sceneNumber, scenario, 
     
     setEditedScene(prev => ({
       ...prev,
-      imagePrompt: {
-        ...prev.imagePrompt,
+      [promptKey]: {
+        ...(prev[promptKey] as ImagePrompt),
         Prop: props
       }
     }))
   }
 
-  const getSelectedCharacterNames = (): string[] => {
-    return editedScene.imagePrompt.Subject?.map(subject => subject.name).filter(name => name && name.trim() !== '') || []
+  const getSelectedCharacterNames = (isEnd: boolean = false): string[] => {
+    const prompt = isEnd ? editedScene.endImagePrompt : editedScene.imagePrompt;
+    return prompt?.Subject?.map(subject => subject.name).filter(name => name && name.trim() !== '') || []
   }
 
-  const getSelectedPropNames = (): string[] => {
-    return editedScene.imagePrompt.Prop?.map(prop => prop.name).filter(name => name && name.trim() !== '') || []
+  const getSelectedPropNames = (isEnd: boolean = false): string[] => {
+    const prompt = isEnd ? editedScene.endImagePrompt : editedScene.imagePrompt;
+    return prompt?.Prop?.map(prop => prop.name).filter(name => name && name.trim() !== '') || []
   }
 
-  const handleCharacterSelectionChange = (selectedCharacterNames: string[]) => {
-    updateImagePromptSubjects(selectedCharacterNames)
+  const handleCharacterSelectionChange = (selectedCharacterNames: string[], isEnd: boolean = false) => {
+    updateImagePromptSubjects(selectedCharacterNames, isEnd)
   }
 
-  const handlePropSelectionChange = (selectedPropNames: string[]) => {
-    updateImagePromptProps(selectedPropNames)
+  const handlePropSelectionChange = (selectedPropNames: string[], isEnd: boolean = false) => {
+    updateImagePromptProps(selectedPropNames, isEnd)
   }
 
-  const updateImagePromptContext = (selectedSettingName: string) => {
+  const updateImagePromptContext = (selectedSettingName: string, isEnd: boolean = false) => {
+    const promptKey = isEnd ? 'endImagePrompt' : 'imagePrompt';
     // Convert selected setting name to Context object with full description
     const setting = scenario.settings.find(s => s.name === selectedSettingName)
     const context = selectedSettingName ? [{
@@ -133,19 +151,20 @@ export function EditSceneModal({ isOpen, onClose, scene, sceneNumber, scenario, 
     
     setEditedScene(prev => ({
       ...prev,
-      imagePrompt: {
-        ...prev.imagePrompt,
+      [promptKey]: {
+        ...(prev[promptKey] as ImagePrompt),
         Context: context
       }
     }))
   }
 
-  const getSelectedSettingName = (): string => {
-    return editedScene.imagePrompt.Context.length > 0 ? editedScene.imagePrompt.Context[0].name : ''
+  const getSelectedSettingName = (isEnd: boolean = false): string => {
+    const prompt = isEnd ? editedScene.endImagePrompt : editedScene.imagePrompt;
+    return (prompt?.Context && prompt.Context.length > 0) ? prompt.Context[0].name : ''
   }
 
-  const handleContextSelectionChange = (selectedSettingName: string) => {
-    updateImagePromptContext(selectedSettingName)
+  const handleContextSelectionChange = (selectedSettingName: string, isEnd: boolean = false) => {
+    updateImagePromptContext(selectedSettingName, isEnd)
   }
 
   const updateVideoPrompt = (field: keyof VideoPrompt, value: any) => {
@@ -258,6 +277,24 @@ export function EditSceneModal({ isOpen, onClose, scene, sceneNumber, scenario, 
                 }`}
               >
                 Image Prompt
+              </div>
+              <div
+                role="tab"
+                tabIndex={0}
+                onClick={() => setActiveTab('endImage')}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setActiveTab('endImage')
+                  }
+                }}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer select-none ${
+                  activeTab === 'endImage'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                }`}
+              >
+                End Image Prompt
               </div>
               <div
                 role="tab"
@@ -400,6 +437,110 @@ export function EditSceneModal({ isOpen, onClose, scene, sceneNumber, scenario, 
                   <div className="space-y-3">
                     <label className="text-sm font-medium">Setting in Scene</label>
                     <Select value={getSelectedSettingName()} onValueChange={handleContextSelectionChange}>
+                      <SelectTrigger className="ml-4">
+                        <SelectValue placeholder="Select setting for this scene..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {scenario.settings.map(setting => (
+                          <SelectItem key={setting.name} value={setting.name}>
+                            {setting.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'endImage' && (
+              <div className="space-y-6">
+                {/* End Image Prompt Section */}
+                <div className="space-y-4">
+                  <div className="grid gap-2">
+                    <label className="text-sm font-medium">Style</label>
+                    <Input
+                      value={editedScene.endImagePrompt?.Style || ''}
+                      onChange={(e) => updateImagePrompt('Style', e.target.value, true)}
+                      placeholder="Define the visual language..."
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <label className="text-sm font-medium">Scene</label>
+                    <Textarea
+                      value={editedScene.endImagePrompt?.Scene || ''}
+                      onChange={(e) => updateImagePrompt('Scene', e.target.value, true)}
+                      placeholder="Describe what's happening in this moment..."
+                      rows={2}
+                    />
+                  </div>
+
+                  {/* Composition Section */}
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium">Composition</label>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 ml-4">
+                      <div>
+                        <label className="text-xs text-muted-foreground">Shot Type</label>
+                        <Input
+                          value={editedScene.endImagePrompt?.Composition.shot_type || ''}
+                          onChange={(e) => updateImagePromptComposition('shot_type', e.target.value, true)}
+                          placeholder="e.g., Close-up, Wide shot"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground">Lighting</label>
+                        <Input
+                          value={editedScene.endImagePrompt?.Composition.lighting || ''}
+                          onChange={(e) => updateImagePromptComposition('lighting', e.target.value, true)}
+                          placeholder="e.g., High-contrast"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-muted-foreground">Overall Mood</label>
+                        <Input
+                          value={editedScene.endImagePrompt?.Composition.overall_mood || ''}
+                          onChange={(e) => updateImagePromptComposition('overall_mood', e.target.value, true)}
+                          placeholder="e.g., Atmospheric"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Subject Section */}
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium">Characters in Scene</label>
+                    <MultiSelect
+                      options={scenario.characters.map(character => ({
+                        label: character.name,
+                        value: character.name
+                      }))}
+                      selected={getSelectedCharacterNames(true)}
+                      onChange={(names) => handleCharacterSelectionChange(names, true)}
+                      placeholder="Select characters for this scene..."
+                      className="ml-4"
+                    />
+                  </div>
+
+                  {/* Prop Section */}
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium">Props in Scene</label>
+                    <MultiSelect
+                      options={scenario.props.map(prop => ({
+                        label: prop.name,
+                        value: prop.name
+                      }))}
+                      selected={getSelectedPropNames(true)}
+                      onChange={(names) => handlePropSelectionChange(names, true)}
+                      placeholder="Select props for this scene..."
+                      className="ml-4"
+                    />
+                  </div>
+
+                  {/* Context Section */}
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium">Setting in Scene</label>
+                    <Select value={getSelectedSettingName(true)} onValueChange={(name) => handleContextSelectionChange(name, true)}>
                       <SelectTrigger className="ml-4">
                         <SelectValue placeholder="Select setting for this scene..." />
                       </SelectTrigger>

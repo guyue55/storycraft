@@ -64,9 +64,13 @@ export async function POST(req: Request): Promise<Response> {
             url = placeholderVideoUrls[Math.floor(Math.random() * placeholderVideoUrls.length)];
           }
         } else {
-          const promptString = typeof scene.videoPrompt === 'string' ? scene.videoPrompt : videoPromptToString(scene.videoPrompt, scenario);
-          logger.debug(promptString)
-          const operationName = await generateSceneVideo(promptString, scene.imageGcsUri!, aspectRatio, model || "veo-3.0-generate-001", generateAudio !== false, durationSeconds);
+          // Optimize Prompt: If only the start frame exists, try to integrate the end frame description into the Prompt
+          let finalPrompt = typeof scene.videoPrompt === 'string' ? scene.videoPrompt : videoPromptToString(scene.videoPrompt, scenario);
+          if (!scene.endImageGcsUri && scene.endImagePrompt?.Scene) {
+            finalPrompt = `${finalPrompt}. The scene ends with: ${scene.endImagePrompt.Scene}`;
+          }
+          logger.debug(finalPrompt)
+          const operationName = await generateSceneVideo(finalPrompt, scene.imageGcsUri!, scene.endImageGcsUri, aspectRatio, model || "veo-3.0-generate-001", generateAudio !== false, durationSeconds);
           logger.debug(`Operation started for scene ${index + 1}`);
 
           const generateVideoResponse = await waitForOperation(operationName, model || "veo-3.0-generate-001");

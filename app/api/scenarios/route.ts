@@ -49,6 +49,8 @@ export async function POST(request: NextRequest) {
         
         // Only add optional fields if they have values
         if (scene.imageGcsUri) sceneData.imageGcsUri = scene.imageGcsUri
+        if (scene.endImageGcsUri) sceneData.endImageGcsUri = scene.endImageGcsUri
+        if (scene.endImagePrompt) sceneData.endImagePrompt = scene.endImagePrompt
         if (typeof scene.videoUri === 'string') sceneData.videoUri = scene.videoUri
         if (typeof scene.voiceoverAudioUri === 'string') sceneData.voiceoverAudioUri = scene.voiceoverAudioUri
         if (scene.errorMessage) sceneData.errorMessage = scene.errorMessage

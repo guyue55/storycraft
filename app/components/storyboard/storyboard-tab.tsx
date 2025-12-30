@@ -118,9 +118,9 @@ interface StoryboardTabProps {
   errorMessage: string | null
   onGenerateAllVideos: (model: string, generateAudio: boolean) => Promise<void>
   onUpdateScene: (index: number, updatedScene: Scene) => void
-  onRegenerateImage: (index: number) => Promise<void>
+  onRegenerateImage: (index: number, imageType?: 'start' | 'end') => Promise<void>
   onGenerateVideo: (index: number, model: string, generateAudio: boolean) => Promise<void>
-  onUploadImage: (index: number, file: File) => Promise<void>
+  onUploadImage: (index: number, file: File, imageType?: 'start' | 'end') => Promise<void>
   onAddScene: () => void
   onRemoveScene: (index: number) => void
   onReorderScenes: (fromIndex: number, toIndex: number) => void
@@ -232,9 +232,9 @@ export function StoryboardTab({
                 scene={scene}
                 scenario={scenario}
                 onUpdate={(updatedScene) => onUpdateScene(index, updatedScene)}
-                onRegenerateImage={() => onRegenerateImage(index)}
+                onRegenerateImage={(imageType) => onRegenerateImage(index, imageType)}
                 onGenerateVideo={() => onGenerateVideo(index, selectedModel.modelName, selectedModel.generateAudio)}
-                onUploadImage={(file) => onUploadImage(index, file)}
+                onUploadImage={(file, imageType) => onUploadImage(index, file, imageType)}
                 onRemoveScene={() => onRemoveScene(index)}
                 isGenerating={generatingScenes.has(index)}
                 canDelete={scenes.length > 1}
@@ -273,9 +273,9 @@ export function StoryboardTab({
                     scene={scene}
                     scenario={scenario}
                     onUpdate={(updatedScene) => onUpdateScene(index, updatedScene)}
-                    onRegenerateImage={() => onRegenerateImage(index)}
+                    onRegenerateImage={(imageType) => onRegenerateImage(index, imageType)}
                     onGenerateVideo={() => onGenerateVideo(index, selectedModel.modelName, selectedModel.generateAudio)}
-                    onUploadImage={(file) => onUploadImage(index, file)}
+                    onUploadImage={(file, imageType) => onUploadImage(index, file, imageType)}
                     onRemoveScene={() => onRemoveScene(index)}
                     isGenerating={generatingScenes.has(index)}
                     canDelete={scenes.length > 1}

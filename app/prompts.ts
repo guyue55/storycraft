@@ -189,9 +189,13 @@ ${scenario.mood}
       "name": "setting name, only the name, choices are [${scenario.settings?.map(setting => `${setting.name}`).join(',')}]",
     }
   ],
-}   
- 3. A scene description  in ${language.name} explaining what happens (description). You can use the character(s) name(s) in your descriptions.
- 4. A short, narrator voiceover text in ${language.name}. One full sentence, ${durationSeconds - 2}s max. (voiceover). You can use the character(s) name(s) in your vocieovers. 
+}
+ 3. A detailed visual description for AI image generation (endImagePrompt) in ${language.name} for the LAST frame of the video, the style should be ${style}.
+ This prompt describes the state of the scene AFTER the action in the video has completed.
+ It should be consistent with the first frame (imagePrompt) in terms of style, characters, and setting, but reflect the changes caused by the action.
+ Return as a JSON object with the same schema as imagePrompt.
+ 4. A scene description  in ${language.name} explaining what happens (description). You can use the character(s) name(s) in your descriptions.
+ 5. A short, narrator voiceover text in ${language.name}. One full sentence, ${durationSeconds - 2}s max. (voiceover). You can use the character(s) name(s) in your vocieovers. 
 a. Each image prompt should describe a key scene or moment from your scenario.
 b. Ensure that the image prompts, when viewed in sequence, tell a coherent story.
 c. Include descriptions of characters, settings, and actions that are consistent across all image prompts.
@@ -230,6 +234,30 @@ Here's an example of how your output should be structured:
       }
     ],
     "Scene": "scene description"
+  },
+  "endImagePrompt": {
+    "Style": "visual style description",
+    "Composition": {
+      "shot_type": "type of shot",
+      "lighting": "lighting description",
+      "overall_mood": "mood description"
+    },
+    "Subject": [
+      {
+        "name": "subject name",
+      }
+    ],
+    "Prop": [
+      {
+        "name": "prop name",
+      }
+    ],
+    "Context": [
+      {
+        "name": "context name",
+      }
+    ],
+    "Scene": "scene description (end state)"
   },
   "videoPrompt": {
     "Action": "action description",

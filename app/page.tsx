@@ -110,7 +110,7 @@ export default function Home() {
     }
   }
 
-  const handleRegenerateImage = async (index: number) => {
+  const handleRegenerateImage = async (index: number, imageType: 'start' | 'end' = 'start') => {
     if (!scenario) return;
 
     setGeneratingScenes(prev => new Set([...prev, index]));
@@ -118,11 +118,12 @@ export default function Home() {
     try {
       // Regenerate a single image
       const scene = scenario.scenes[index]
+      const prompt = imageType === 'end' ? (scene.endImagePrompt || scene.imagePrompt) : scene.imagePrompt
 
       const response = await fetch('/api/regenerate-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: scene.imagePrompt, scenario: scenario }),
+        body: JSON.stringify({ prompt, scenario: scenario, imageType }),
       })
 
       const result = await response.json()
@@ -135,12 +136,18 @@ export default function Home() {
         if (!currentScenario) return currentScenario;
 
         const updatedScenes = [...currentScenario.scenes]
-        updatedScenes[index] = {
-          ...updatedScenes[index],
-          imageGcsUri,
-          videoUri: undefined,
-          errorMessage: errorMessage
+        const updatedScene = { ...updatedScenes[index] }
+
+        if (imageType === 'end') {
+          updatedScene.endImageGcsUri = imageGcsUri
+        } else {
+          updatedScene.imageGcsUri = imageGcsUri
         }
+        
+        updatedScene.videoUri = undefined
+        updatedScene.errorMessage = errorMessage
+        
+        updatedScenes[index] = updatedScene
 
         return {
           ...currentScenario,
@@ -511,7 +518,7 @@ export default function Home() {
     })
   };
 
-  const handleUploadImage = async (index: number, file: File) => {
+  const handleUploadImage = async (index: number, file: File, imageType: 'start' | 'end' = 'start') => {
     setErrorMessage(null)
     try {
       const reader = new FileReader()
@@ -525,7 +532,17 @@ export default function Home() {
           if (!currentScenario) return currentScenario;
 
           const updatedScenes = [...currentScenario.scenes]
-          updatedScenes[index] = { ...updatedScenes[index], imageGcsUri: resizedImageGcsUri, videoUri: undefined }
+          const updatedScene = { ...updatedScenes[index] }
+
+          if (imageType === 'end') {
+            updatedScene.endImageGcsUri = resizedImageGcsUri
+          } else {
+            updatedScene.imageGcsUri = resizedImageGcsUri
+          }
+          
+          updatedScene.videoUri = undefined
+          
+          updatedScenes[index] = updatedScene
 
           return {
             ...currentScenario,
