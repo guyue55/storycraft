@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Loader2, Pencil, RefreshCw, Upload, Video, Trash2, GripVertical, MessageCircle } from 'lucide-react'
+import { Loader2, Pencil, RefreshCw, Upload, Video, Trash2, GripVertical, MessageCircle, Maximize2, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Scene, Scenario } from '../../types'
 import { EditSceneModal } from './edit-scene-modal'
@@ -52,6 +52,7 @@ export function SceneData({
 }: SceneDataProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isConversationalEditOpen, setIsConversationalEditOpen] = useState(false)
+  const [zoomedImage, setZoomedImage] = useState<'start' | 'end' | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null);
   const endFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -86,7 +87,10 @@ export function SceneData({
       <div className="flex flex-col">
         <div className="flex flex-row gap-1">
           {/* Start Frame */}
-          <div className="relative w-full aspect-[11/6] overflow-hidden group flex-1">
+          <div className={cn(
+            "relative w-full aspect-[11/6] overflow-hidden group flex-1 transition-all duration-300",
+            zoomedImage === 'start' ? "fixed inset-0 z-[100] bg-black/90 aspect-none" : "relative"
+          )}>
             {isGenerating && (
               <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
                 <Loader2 className="h-8 w-8 text-white animate-spin" />
@@ -97,12 +101,39 @@ export function SceneData({
                 <VideoPlayer videoGcsUri={scene.videoUri} aspectRatio={scenario.aspectRatio} />
               </div>
             ) : (
-              <GcsImage
-                gcsUri={scene.imageGcsUri || null}
-                alt={`Scene ${sceneNumber} Start`}
-                className="absolute inset-0 w-full h-full object-contain object-center rounded-tl-lg"
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              />
+              <div 
+                className={cn(
+                  "absolute inset-0 cursor-zoom-in group/image",
+                  zoomedImage === 'start' && "cursor-zoom-out"
+                )}
+                onClick={() => setZoomedImage(zoomedImage === 'start' ? null : 'start')}
+              >
+                <GcsImage
+                  gcsUri={scene.imageGcsUri || null}
+                  alt={`Scene ${sceneNumber} Start`}
+                  className={cn(
+                    "absolute inset-0 w-full h-full object-contain object-center rounded-tl-lg transition-all duration-300",
+                    zoomedImage === 'start' && "p-4 md:p-12 rounded-none"
+                  )}
+                  sizes={zoomedImage === 'start' ? "100vw" : "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"}
+                />
+                {zoomedImage !== 'start' && (
+                  <div className="absolute inset-0 bg-black/0 group-hover/image:bg-black/20 transition-colors flex items-center justify-center">
+                    <Maximize2 className="text-white opacity-0 group-hover/image:opacity-100 transition-opacity h-8 w-8" />
+                  </div>
+                )}
+              </div>
+            )}
+            {zoomedImage === 'start' && (
+              <button 
+                className="absolute top-4 right-4 text-white/70 hover:text-white p-2 z-[101]"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setZoomedImage(null);
+                }}
+              >
+                <X className="h-8 w-8" />
+              </button>
             )}
             {!hideControls && (
               <>
@@ -182,23 +213,57 @@ export function SceneData({
 
           {/* End Frame (Only visible in image mode) */}
           {displayMode === 'image' && (
-            <div className="relative w-full aspect-[11/6] overflow-hidden group flex-1 border-l border-white/20">
+            <div className={cn(
+              "relative w-full aspect-[11/6] overflow-hidden group flex-1 border-l border-white/20 transition-all duration-300",
+              zoomedImage === 'end' ? "fixed inset-0 z-[100] bg-black/90 aspect-none" : "relative"
+            )}>
               {isGenerating && (
                 <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
                   <Loader2 className="h-8 w-8 text-white animate-spin" />
                 </div>
               )}
               {scene.endImageGcsUri ? (
-                <GcsImage
-                  gcsUri={scene.endImageGcsUri}
-                  alt={`Scene ${sceneNumber} End`}
-                  className="absolute inset-0 w-full h-full object-contain object-center rounded-tr-lg"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                />
+                <div 
+                  className={cn(
+                    "absolute inset-0 cursor-zoom-in group/image",
+                    zoomedImage === 'end' && "cursor-zoom-out"
+                  )}
+                  onClick={() => setZoomedImage(zoomedImage === 'end' ? null : 'end')}
+                >
+                  <GcsImage
+                    gcsUri={scene.endImageGcsUri}
+                    alt={`Scene ${sceneNumber} End`}
+                    className={cn(
+                      "absolute inset-0 w-full h-full object-contain object-center rounded-tr-lg transition-all duration-300",
+                      zoomedImage === 'end' && "p-4 md:p-12 rounded-none"
+                    )}
+                    sizes={zoomedImage === 'end' ? "100vw" : "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"}
+                  />
+                  {zoomedImage !== 'end' && (
+                    <div className="absolute inset-0 bg-black/0 group-hover/image:bg-black/20 transition-colors flex items-center justify-center">
+                      <Maximize2 className="text-white opacity-0 group-hover/image:opacity-100 transition-opacity h-8 w-8" />
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-400">
-                  <span className="text-xs">End Frame</span>
+                  <div className="flex flex-col items-center gap-2">
+                    <Upload className="h-8 w-8 opacity-20" />
+                    <span className="text-xs font-medium opacity-40">No End Frame</span>
+                  </div>
                 </div>
+              )}
+              
+              {zoomedImage === 'end' && (
+                <button 
+                  className="absolute top-4 right-4 text-white/70 hover:text-white p-2 z-[101]"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setZoomedImage(null);
+                  }}
+                >
+                  <X className="h-8 w-8" />
+                </button>
               )}
               
               {!hideControls && (
@@ -265,6 +330,8 @@ export function SceneData({
         scenario={scenario}
         onUpdate={onUpdate}
       />
+
+
     </Card>
   )
 }
