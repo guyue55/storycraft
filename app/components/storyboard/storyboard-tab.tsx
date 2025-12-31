@@ -34,9 +34,12 @@ const VEO_MODEL_OPTIONS = [
   }
 ];
 
-function ImagePromptDisplay({ imagePrompt }: { imagePrompt: ImagePrompt }) {
+function ImagePromptDisplay({ imagePrompt, title }: { imagePrompt: ImagePrompt, title?: string }) {
   return (
     <div className="space-y-3">
+      {title && (
+        <h5 className="text-sm font-bold text-primary border-b pb-1">{title}</h5>
+      )}
       <div>
         <span className="font-medium text-xs">Style:</span>
         <p className="text-sm text-card-foreground/80">{imagePrompt.Style}</p>
@@ -293,18 +296,12 @@ export function StoryboardTab({
                     <h3 className="font-semibold mb-4 text-card-foreground">Scene {index + 1}</h3>
 
                     {/* Tab Navigation */}
-                    <div className="flex border-b border-border mb-4">
+                    <div className="flex border-b border-border mb-4 overflow-x-auto">
                       <div
                         role="tab"
                         tabIndex={0}
                         onClick={() => setActiveTab(index, 'general')}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault()
-                            setActiveTab(index, 'general')
-                          }
-                        }}
-                        className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer select-none ${activeTabs[index] === 'general'
+                        className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer whitespace-nowrap ${activeTabs[index] === 'general'
                             ? 'border-primary text-primary'
                             : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                           }`}
@@ -315,30 +312,31 @@ export function StoryboardTab({
                         role="tab"
                         tabIndex={0}
                         onClick={() => setActiveTab(index, 'image')}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault()
-                            setActiveTab(index, 'image')
-                          }
-                        }}
-                        className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer select-none ${activeTabs[index] === 'image'
+                        className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer whitespace-nowrap ${activeTabs[index] === 'image'
                             ? 'border-primary text-primary'
                             : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                           }`}
                       >
                         Image Prompt
                       </div>
+                      {scene.endImagePrompt && (
+                        <div
+                          role="tab"
+                          tabIndex={0}
+                          onClick={() => setActiveTab(index, 'end-image')}
+                          className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer whitespace-nowrap ${activeTabs[index] === 'end-image'
+                              ? 'border-primary text-primary'
+                              : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                            }`}
+                        >
+                          End Image Prompt
+                        </div>
+                      )}
                       <div
                         role="tab"
                         tabIndex={0}
                         onClick={() => setActiveTab(index, 'video')}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault()
-                            setActiveTab(index, 'video')
-                          }
-                        }}
-                        className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer select-none ${activeTabs[index] === 'video'
+                        className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer whitespace-nowrap ${activeTabs[index] === 'video'
                             ? 'border-primary text-primary'
                             : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                           }`}
@@ -364,6 +362,12 @@ export function StoryboardTab({
                     {activeTabs[index] === 'image' && (
                       <div className="space-y-4">
                         <ImagePromptDisplay imagePrompt={scene.imagePrompt} />
+                      </div>
+                    )}
+
+                    {activeTabs[index] === 'end-image' && scene.endImagePrompt && (
+                      <div className="space-y-4">
+                        <ImagePromptDisplay imagePrompt={scene.endImagePrompt} />
                       </div>
                     )}
 
@@ -459,9 +463,20 @@ export function StoryboardTab({
               <div className="p-4 bg-card rounded-lg border">
                 <h3 className="font-semibold mb-2 text-card-foreground">Scene {currentSlide + 1}</h3>
                 <div className="space-y-4">
-                  <div>
-                    <h4 className="text-sm font-medium text-card-foreground mb-1">Image Prompt</h4>
-                    <ImagePromptDisplay imagePrompt={scenes[currentSlide].imagePrompt} />
+                  <div className={cn(
+                    "grid grid-cols-1 gap-4",
+                    scenes[currentSlide].endImagePrompt && "md:grid-cols-2 gap-6"
+                  )}>
+                    <div>
+                      <h4 className="text-sm font-medium text-card-foreground mb-1">Image Prompt</h4>
+                      <ImagePromptDisplay imagePrompt={scenes[currentSlide].imagePrompt} />
+                    </div>
+                    {scenes[currentSlide].endImagePrompt && (
+                      <div>
+                        <h4 className="text-sm font-medium text-card-foreground mb-1">End Image Prompt</h4>
+                        <ImagePromptDisplay imagePrompt={scenes[currentSlide].endImagePrompt} />
+                      </div>
+                    )}
                   </div>
                   <div>
                     <h4 className="text-sm font-medium text-card-foreground mb-1">Voiceover</h4>
