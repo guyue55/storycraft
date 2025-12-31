@@ -159,6 +159,20 @@ export function StoryboardTab({
     onGenerateAllVideos(selectedModel.modelName, selectedModel.generateAudio)
   }
 
+  const handleBatchGenerateEndFrames = async () => {
+    // 找出所有已有首帧但没有尾帧的分镜索引
+    const pendingIndices = scenes
+      .map((scene, index) => ({ scene, index }))
+      .filter(({ scene, index }) => scene.imageGcsUri && !scene.endImageGcsUri && !generatingScenes.has(index))
+      .map(({ index }) => index);
+
+    if (pendingIndices.length === 0) return;
+
+    // 批量触发生成
+    for (const index of pendingIndices) {
+      onRegenerateImage(index, 'end');
+    }
+  }
 
   const handleGenerateNext = () => {
     const nextIndex = scenes.findIndex((scene, i) => scene.imageGcsUri && !scene.videoUri && !generatingScenes.has(i))
@@ -604,6 +618,16 @@ export function StoryboardTab({
               </div>
             </PopoverContent>
           </Popover>
+
+          <Button
+            onClick={handleBatchGenerateEndFrames}
+            disabled={isVideoLoading || scenes.length === 0 || generatingScenes.size > 0 || !scenes.some(s => s.imageGcsUri && !s.endImageGcsUri)}
+            variant="outline"
+            className="border-primary text-primary hover:bg-primary/10"
+          >
+            <Image className="mr-2 h-4 w-4" />
+            Generate End Frames
+          </Button>
           
           <Button
             onClick={handleGenerateAllVideosClick}
