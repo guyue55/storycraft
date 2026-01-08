@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { Grid, List, Loader2, Presentation, Video, ChevronLeft, ChevronRight, Plus, Minus, Image, ChevronDown, Check } from 'lucide-react'
+import { Grid, List, Loader2, Presentation, Video, ChevronLeft, ChevronRight, Plus, Image as ImageIcon, ChevronDown, Check } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { Scene, Scenario, ImagePrompt, VideoPrompt } from "../../types"
 import { SceneData } from './scene-data'
@@ -102,7 +102,7 @@ function VideoPromptDisplay({ videoPrompt }: { videoPrompt: VideoPrompt }) {
           <span className="font-medium text-xs">Dialogue:</span>
           {videoPrompt.Dialogue.map((dialogue, index) => (
             <p key={index} className="text-sm text-card-foreground/80 ml-2">
-              • {dialogue.speaker}: "{dialogue.line}"
+              • {dialogue.speaker}: &quot;{dialogue.line}&quot;
             </p>
           ))}
         </div>
@@ -152,26 +152,9 @@ export function StoryboardTab({
   const [selectedModel, setSelectedModel] = useState(VEO_MODEL_OPTIONS[0])
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
-
-  console.log(JSON.stringify(scenario, null, 2))
-
+ 
   const handleGenerateAllVideosClick = () => {
     onGenerateAllVideos(selectedModel.modelName, selectedModel.generateAudio)
-  }
-
-  const handleBatchGenerateEndFrames = async () => {
-    // 找出所有已有首帧但没有尾帧的分镜索引
-    const pendingIndices = scenes
-      .map((scene, index) => ({ scene, index }))
-      .filter(({ scene, index }) => scene.imageGcsUri && !scene.endImageGcsUri && !generatingScenes.has(index))
-      .map(({ index }) => index);
-
-    if (pendingIndices.length === 0) return;
-
-    // 批量触发生成
-    for (const index of pendingIndices) {
-      onRegenerateImage(index, 'end');
-    }
   }
 
   const handleGenerateNext = () => {
@@ -193,17 +176,19 @@ export function StoryboardTab({
 
   // Initialize active tabs for new scenes
   useEffect(() => {
-    const newActiveTabs = { ...activeTabs }
-    scenes.forEach((_, index) => {
-      if (!newActiveTabs[index]) {
-        newActiveTabs[index] = 'general'
-      }
+    setActiveTabs(prev => {
+      const newActiveTabs = { ...prev }
+      scenes.forEach((_, index) => {
+        if (!newActiveTabs[index]) {
+          newActiveTabs[index] = 'general'
+        }
+      })
+      return newActiveTabs
     })
-    setActiveTabs(newActiveTabs)
-  }, [scenes.length])
+  }, [scenes])
 
-  console.log(JSON.stringify(scenario, null, 2))
-
+ 
+ 
   const setActiveTab = (sceneIndex: number, tab: string) => {
     setActiveTabs(prev => ({
       ...prev,
@@ -236,6 +221,8 @@ export function StoryboardTab({
     setDraggedIndex(null)
     setDragOverIndex(null)
   }
+
+  const isAnySceneGenerating = generatingScenes.size > 0;
 
   const renderScenes = () => {
     switch (viewMode) {
@@ -569,7 +556,7 @@ export function StoryboardTab({
                 displayMode === 'image' && "bg-accent text-accent-foreground"
               )}
             >
-              <Image className="h-4 w-4" />
+              <ImageIcon className="h-4 w-4" />
               <span className="sr-only">Image view</span>
             </Button>
             <Button
@@ -593,7 +580,7 @@ export function StoryboardTab({
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                disabled={isVideoLoading || scenes.length === 0 || generatingScenes.size > 0}
+                disabled={isVideoLoading || scenes.length === 0 || isAnySceneGenerating}
               >
                 <Video className="mr-2 h-4 w-4" />
                 {selectedModel.label}
@@ -620,18 +607,8 @@ export function StoryboardTab({
           </Popover>
 
           <Button
-            onClick={handleBatchGenerateEndFrames}
-            disabled={isVideoLoading || scenes.length === 0 || generatingScenes.size > 0 || !scenes.some(s => s.imageGcsUri && !s.endImageGcsUri)}
-            variant="outline"
-            className="border-primary text-primary hover:bg-primary/10"
-          >
-            <Image className="mr-2 h-4 w-4" />
-            Generate End Frames
-          </Button>
-          
-          <Button
             onClick={handleGenerateAllVideosClick}
-            disabled={isVideoLoading || scenes.length === 0 || generatingScenes.size > 0}
+            disabled={isVideoLoading || scenes.length === 0 || isAnySceneGenerating}
             className="bg-primary text-primary-foreground hover:bg-primary/90"
           >
             {isVideoLoading ? (
@@ -649,10 +626,10 @@ export function StoryboardTab({
           
           <Button
             onClick={handleGenerateNext}
-            disabled={isVideoLoading || scenes.length === 0 || generatingScenes.size > 0}
+            disabled={isVideoLoading || scenes.length === 0 || isAnySceneGenerating}
             variant="secondary"
           >
-            {generatingScenes.size > 0 ? (
+            {isAnySceneGenerating ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Generating...
@@ -667,7 +644,7 @@ export function StoryboardTab({
           
           <Button
             onClick={() => onAllVideosComplete && onAllVideosComplete()}
-            disabled={isVideoLoading || generatingScenes.size > 0 || !scenes.every(s => s.videoUri)}
+            disabled={isVideoLoading || isAnySceneGenerating || !scenes.every(s => s.videoUri)}
             variant="default"
             className="bg-green-600 hover:bg-green-700 text-white"
           >

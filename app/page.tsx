@@ -128,8 +128,17 @@ export default function Home() {
 
       const result = await response.json()
 
-      const { imageGcsUri } = result
-      const errorMessage = result.errorMessage
+      const { success, imageGcsUri, errorMessage } = result
+      if (!success || !imageGcsUri) {
+        setScenario(currentScenario => {
+          if (!currentScenario) return currentScenario;
+          const updatedScenes = [...currentScenario.scenes]
+          const updatedScene = { ...updatedScenes[index], errorMessage }
+          updatedScenes[index] = updatedScene
+          return { ...currentScenario, scenes: updatedScenes }
+        })
+        throw new Error(errorMessage || 'Failed to regenerate image')
+      }
 
       // Use state updater function to work with current state
       setScenario(currentScenario => {
@@ -148,6 +157,23 @@ export default function Home() {
         updatedScene.errorMessage = errorMessage
         
         updatedScenes[index] = updatedScene
+        
+        // Shadow sync: keep transitions smooth between adjacent scenes
+        if (imageType === 'start' && index > 0) {
+          console.log(`[Shadow Sync] Syncing Start Image of Scene ${index} to End Image of Scene ${index - 1}`);
+          updatedScenes[index - 1] = {
+            ...updatedScenes[index - 1],
+            endImageGcsUri: imageGcsUri,
+            videoUri: undefined
+          }
+        } else if (imageType === 'end' && index < updatedScenes.length - 1) {
+          console.log(`[Shadow Sync] Syncing End Image of Scene ${index} to Start Image of Scene ${index + 1}`);
+          updatedScenes[index + 1] = {
+            ...updatedScenes[index + 1],
+            imageGcsUri: imageGcsUri,
+            videoUri: undefined
+          }
+        }
 
         return {
           ...currentScenario,
@@ -541,13 +567,24 @@ export default function Home() {
           }
           
           updatedScene.videoUri = undefined
-          
           updatedScenes[index] = updatedScene
 
-          return {
-            ...currentScenario,
-            scenes: updatedScenes
+          // Shadow sync logic for manual upload
+          if (imageType === 'start' && index > 0) {
+            updatedScenes[index - 1] = {
+              ...updatedScenes[index - 1],
+              endImageGcsUri: resizedImageGcsUri,
+              videoUri: undefined
+            }
+          } else if (imageType === 'end' && index < updatedScenes.length - 1) {
+            updatedScenes[index + 1] = {
+              ...updatedScenes[index + 1],
+              imageGcsUri: resizedImageGcsUri,
+              videoUri: undefined
+            }
           }
+
+          return { ...currentScenario, scenes: updatedScenes }
         })
       }
       reader.onerror = () => {
@@ -992,6 +1029,21 @@ export default function Home() {
 
     const updatedScenes = scenario.scenes.filter((_, i) => i !== index);
 
+    // Shadow sync: After removal, the scene that was at index + 1 now moves to index.
+    // Its new predecessor is the scene that was at index - 1.
+    // We should sync the new transition point.
+    if (index > 0 && index < scenario.scenes.length - 1) {
+      // The scene at index-1 now connects to the scene that was at index+1
+      const prevScene = { ...updatedScenes[index - 1] };
+      const nextScene = { ...updatedScenes[index] };
+
+      // Sync next scene's start to prev scene's end
+      nextScene.imageGcsUri = prevScene.endImageGcsUri;
+      nextScene.videoUri = undefined;
+
+      updatedScenes[index] = nextScene;
+    }
+
     // Clear any generating scenes that are affected by the removal
     setGeneratingScenes(prev => {
       const updated = new Set<number>();
@@ -1018,6 +1070,16 @@ export default function Home() {
     const updatedScenes = [...scenario.scenes];
     const [movedScene] = updatedScenes.splice(fromIndex, 1);
     updatedScenes.splice(toIndex, 0, movedScene);
+    
+    // Shadow sync: after reordering, re-anchor start frames to the new predecessors' end frames
+    for (let i = 1; i < updatedScenes.length; i++) {
+      const prev = updatedScenes[i - 1];
+      updatedScenes[i] = {
+        ...updatedScenes[i],
+        imageGcsUri: prev.endImageGcsUri,
+        videoUri: undefined
+      };
+    }
 
     // Update generating scenes indices
     setGeneratingScenes(prev => {
@@ -1184,4 +1246,3 @@ export default function Home() {
     </main>
   )
 }
-

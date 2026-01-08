@@ -485,7 +485,13 @@ export async function generateStoryboard(scenario: Scenario, numScenes: number, 
       }
     }));
 
-    newScenario.scenes = scenesWithImages
+    const linkedScenes = scenesWithImages.map((scene, i, arr) => {
+      if (i < arr.length - 1) {
+        return { ...scene, endImageGcsUri: arr[i + 1].imageGcsUri }
+      }
+      return scene
+    })
+    newScenario.scenes = linkedScenes
     // Create a fresh copy to ensure proper serialization
     return JSON.parse(JSON.stringify(newScenario))
   } catch (error) {
@@ -493,4 +499,3 @@ export async function generateStoryboard(scenario: Scenario, numScenes: number, 
     throw new Error(`Failed to generate scenes: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }
-
